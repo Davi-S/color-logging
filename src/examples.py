@@ -1,5 +1,5 @@
 import logging
-import custom_logging as c_log
+import color_logging as c_log
 
 # ======= SETUP LOGGING =======
 # Stream handler

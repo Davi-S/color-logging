@@ -118,9 +118,8 @@ class ColoramaFormatter(logging.Formatter):
     # TODO: add support for the '$' style
     """
     A logging formatter with support for color placeholders and color configuration based on the logging level.
-    Does not support the '$' style.
 
-    To use colors, just use the placeholder with the color code.
+    To use colors, just use a placeholder with the color code.
     The color code has the following format: TYPE + _ + COLOR NAME
     where type can be one of: FORE, BACK, STYLE;
     and the color name can be any of the colorama constant shorthand for ANSI escape sequences (https://pypi.org/project/colorama/)
@@ -130,8 +129,8 @@ class ColoramaFormatter(logging.Formatter):
     These color codes can be placed anywhere on the formatter string and on the message.
 
     The color configuration is a way to configure colors for the log record attributes based on on log level.
-    It is a dictionary where each key is the logging level and the values are a dictionary with the log record attributes name as key and the color codes (without placeholders) as values. There can be multiple color codes separate by comma and with no space
-    Dict[logging.level, Dict[logging.record_attribute_name_string, color_code_str]]
+    It is a dictionary where each key is the logging level (int) and the values are a dictionary with the log record attributes name as key and the color codes as values. There can be multiple color codes separate by comma and with no space.
+    `Dict[logging.level, Dict[logging.record_attribute_name_string, color_code_str]]`
     There is a special attribute called "all" which is used to set the value of all record attributes at once
     Example of a simple color configuration dict:
     {
@@ -149,13 +148,12 @@ class ColoramaFormatter(logging.Formatter):
             'all': 'FORE_BLACK,BACK_WHITE'
         }
     }
-    It is not recommended to use the 'all' attribute together with color placeholders on the formatters or message
+    It is not recommended to use the 'all' attribute together with color placeholders on the formatters on message
     """
 
     def __init__(self, fmt=None, datefmt=None, style='%', validate=True, color_config=None, *, defaults=None):
         if style not in logging._STYLES:
-            raise ValueError(
-                f"Style must be one of: {','.join(logging._STYLES.keys())}")
+            raise ValueError(f"Style must be one of: {','.join(logging._STYLES.keys())}")
 
         self._style = _COLORAMA_STYLES[style](fmt, color_config,
                                               defaults=(defaults or {}) | _ALL_VALUES)
