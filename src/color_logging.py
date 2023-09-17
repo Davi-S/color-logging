@@ -1,34 +1,17 @@
 import logging
-import os
 import re
-from pathlib import Path
 
 import colorama
 
 
-_LOG_FOLDER = Path(os.path.join(os.getcwd(), '.logs'))
-
 # Join all color codes from colorama
 _ALL_VALUES = {f'BACK_{key}': value for key, value in colorama.Back.__dict__.items()} | {f'FORE_{key}': value for key, value in colorama.Fore.__dict__.items()} | {f'STYLE_{key}': value for key, value in colorama.Style.__dict__.items()}
-
-# list of formatter strings to keep consistency
-formatters = [
-    '{levelname:<8} {name} : {funcName} {FORE_LIGHTBLACK_EX}-> {STYLE_RESET_ALL}{message}',
-    '{asctime} : {levelname:<8} : {name} : {funcName} : {message}',
-]
-
-
-class Default(dict):
-    """Dict that returns a placeholder with the key when trying to format a missing key"""
-
-    def __missing__(self, key):
-        return f'%({key})s'
 
 
 class ColoramaPercentStyle(logging.PercentStyle):
     def __init__(self, fmt, color_config, *, defaults=None):
         self._fmt = self._add_reset_all(fmt) if fmt else self.default_format
-        self._defaults = defaults
+        self._defaults = (defaults or {}) | _ALL_VALUES
         self._color_config = color_config
 
     def _format(self, record):
@@ -41,7 +24,7 @@ class ColoramaPercentStyle(logging.PercentStyle):
         return fmt % values
 
     def _format_message(self, msg):
-        return msg % Default(_ALL_VALUES)
+        return msg % _ALL_VALUES
 
     def _add_reset_all(self, fmt):
         # sourcery skip: use-fstring-for-concatenation
@@ -61,11 +44,10 @@ class ColoramaPercentStyle(logging.PercentStyle):
             replacement = f"{prefixes}{placeholder}%(STYLE_RESET_ALL)s"
             result = result.replace(placeholder, replacement)
         return result
-    
+
     @staticmethod
     def wrap_all(fmt: str, wrapper_dict: dict[str, str]) -> str:
-        prefixes = ''.join(f'%({value})s'
-                           for value in wrapper_dict['all'].split(','))
+        prefixes = ''.join(f'%({value})s' for value in wrapper_dict['all'].split(','))
         return prefixes + fmt
 
 
@@ -92,8 +74,7 @@ class ColoramaStrFormatStyle(ColoramaPercentStyle, logging.StrFormatStyle):
     def wrap_placeholders(fmt: str, wrapper_dict: dict[str, str]) -> str:
         for key in wrapper_dict:
             placeholder_start = fmt.find('{' + key)
-            placeholder = fmt[placeholder_start:fmt.find('}',
-                                                         placeholder_start) + 1]
+            placeholder = fmt[placeholder_start:fmt.find('}', placeholder_start) + 1]
             prefixes = ''.join(f'{{{value}}}'
                                for value in wrapper_dict[key].split(','))
             replacement = f'{prefixes}{placeholder}' + '{STYLE_RESET_ALL}'
@@ -115,7 +96,6 @@ _COLORAMA_STYLES = {
 
 
 class ColoramaFormatter(logging.Formatter):
-    # TODO: add support for the '$' style
     """
     A logging formatter with support for color placeholders and color configuration based on the logging level.
 
@@ -152,11 +132,10 @@ class ColoramaFormatter(logging.Formatter):
     """
 
     def __init__(self, fmt=None, datefmt=None, style='%', validate=True, color_config=None, *, defaults=None):
-        if style not in logging._STYLES:
-            raise ValueError(f"Style must be one of: {','.join(logging._STYLES.keys())}")
+        if style not in _COLORAMA_STYLES:
+            raise ValueError(f"Style must be one of: {','.join(_COLORAMA_STYLES.keys())}")
 
-        self._style = _COLORAMA_STYLES[style](fmt, color_config,
-                                              defaults=(defaults or {}) | _ALL_VALUES)
+        self._style = _COLORAMA_STYLES[style](fmt, color_config, defaults=defaults)
 
         if validate:
             self._style.validate()
@@ -167,9 +146,3 @@ class ColoramaFormatter(logging.Formatter):
         message = super().format(record)
         # Format the color placeholders that are on the message and return.
         return self._style._format_message(message)
-
-
-def create_file_handler(filename, mode='a', encoding='utf-8', delay=False, errors=None):
-    """Create a file handler with the log folder path"""
-    file_path = Path(os.path.join(_LOG_FOLDER, f'{filename}.log'))
-    return logging.FileHandler(file_path, mode, encoding, delay, errors)
