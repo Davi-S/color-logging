@@ -16,11 +16,13 @@ class ColoramaPercentStyle(logging.PercentStyle):
 
     def _format(self, record):
         values = self._defaults | record.__dict__
-        if self._color_config:
+        if self._color_config and record.levelno in self._color_config.keys():
             if 'all' in self._color_config[record.levelno]:
                 fmt = self.wrap_all(self._fmt, self._color_config[record.levelno])
             else:
                 fmt = self.wrap_placeholders(self._fmt, self._color_config[record.levelno])
+        else:
+            fmt = self._fmt
         return fmt % values
 
     def _format_message(self, msg):
@@ -54,11 +56,13 @@ class ColoramaPercentStyle(logging.PercentStyle):
 class ColoramaStrFormatStyle(ColoramaPercentStyle, logging.StrFormatStyle):
     def _format(self, record):
         values = self._defaults | record.__dict__
-        if self._color_config:
+        if self._color_config and record.levelno in self._color_config.keys():
             if 'all' in self._color_config[record.levelno]:
                 fmt = self.wrap_all(self._fmt, self._color_config[record.levelno])
             else:
                 fmt = self.wrap_placeholders(self._fmt, self._color_config[record.levelno])
+        else:
+            fmt = self._fmt
         return fmt.format(**values)
 
     def _format_message(self, msg):

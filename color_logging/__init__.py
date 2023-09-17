@@ -1,2 +1,2 @@
-from color_logging import ColoramaFormatter
+from .color_logging import ColoramaFormatter
 
